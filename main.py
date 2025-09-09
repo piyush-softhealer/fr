@@ -1,29 +1,39 @@
 #!/usr/bin/env python3
-# Receipt generator script
+# Receipt generator logic
 import random
 import datetime
 from PIL import Image, ImageDraw, ImageFont
 import os
 
 # Expanded lists for more variety
-fruit_names = ["Apple", "Banana", "Grapes", "Orange", "Papaya", "Mango", 
-               "Pineapple", "Kiwi", "Pear", "Guava", "Strawberry", "Blueberry",
-               "Watermelon", "Pomegranate", "Cherry", "Peach", "Plum", "Apricot"]
+fruit_names = [
+    "Apple", "Banana", "Grapes", "Orange", "Papaya", "Mango",
+    "Pineapple", "Kiwi", "Pear", "Guava", "Strawberry", "Blueberry",
+    "Watermelon", "Pomegranate", "Cherry", "Peach", "Plum", "Apricot"
+]
 
-company_prefixes = ["Fresh", "Green", "Daily", "Urban", "Organic", "Prime", 
-                    "Budget", "Harvest", "Royal", "Metro", "Super", "Mega",
-                    "Family", "City", "Friendly", "Quick", "Value", "Best"]
+company_prefixes = [
+    "Fresh", "Green", "Daily", "Urban", "Organic", "Prime",
+    "Budget", "Harvest", "Royal", "Metro", "Super", "Mega",
+    "Family", "City", "Friendly", "Quick", "Value", "Best"
+]
 
-company_suffixes = ["Mart", "Grocery", "Store", "Bazaar", "Grocers", "Market", 
-                    "Provision", "Center", "Corner", "Depot", "Shop", "Supermarket"]
+company_suffixes = [
+    "Mart", "Grocery", "Store", "Bazaar", "Grocers", "Market",
+    "Provision", "Center", "Corner", "Depot", "Shop", "Supermarket"
+]
 
-places = ["Mumbai", "Delhi", "Bengaluru", "Chennai", "Hyderabad", "Kolkata", 
-          "Pune", "Ahmedabad", "Jaipur", "Lucknow", "Nagpur", "Surat", 
-          "Bhopal", "Indore", "Patna", "Vadodara", "Ghaziabad", "Ludhiana"]
+places = [
+    "Mumbai", "Delhi", "Bengaluru", "Chennai", "Hyderabad", "Kolkata",
+    "Pune", "Ahmedabad", "Jaipur", "Lucknow", "Nagpur", "Surat",
+    "Bhopal", "Indore", "Patna", "Vadodara", "Ghaziabad", "Ludhiana"
+]
 
-streets = ["MG Road", "Station Road", "1st Main", "Park Street", "Church Lane", 
-           "Market Lane", "Rose Ave", "Victoria St.", "Baker Street", "Gandhi Road",
-           "Nehru Marg", "Tilak Road", "Jawahar Nagar", "Rajpur Road", "Civil Lines"]
+streets = [
+    "MG Road", "Station Road", "1st Main", "Park Street", "Church Lane",
+    "Market Lane", "Rose Ave", "Victoria St.", "Baker Street", "Gandhi Road",
+    "Nehru Marg", "Tilak Road", "Jawahar Nagar", "Rajpur Road", "Civil Lines"
+]
 
 def random_gstin():
     state = f"{random.randint(1,35):02d}"
@@ -91,7 +101,6 @@ def render_receipt_to_image(data, out_path="receipt_output.png", width=400):
     
     # Try to load a monospace font for better alignment
     try:
-        # Try different possible font paths
         font_paths = [
             "/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf",
             "/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf",
@@ -106,7 +115,6 @@ def render_receipt_to_image(data, out_path="receipt_output.png", width=400):
                 break
         
         if font is None:
-            # Fallback to default font
             font = ImageFont.load_default()
     except:
         font = ImageFont.load_default()
@@ -153,10 +161,8 @@ def render_receipt_to_image(data, out_path="receipt_output.png", width=400):
     
     # Items
     for qty, name, rate, amount in data["items"]:
-        # Truncate long item names
         if len(name) > 18:
             name = name[:15] + "..."
-        
         item_line = f"{qty:<4} {name:<19} {rate:>4}  {amount:>5}"
         draw_line(item_line)
     
@@ -178,13 +184,11 @@ def render_receipt_to_image(data, out_path="receipt_output.png", width=400):
     draw_line("Please visit again!", "center")
     
     img.save(out_path)
-    print(f"Saved receipt image to {out_path}")
     return out_path
 
 if __name__ == '__main__':
-    # Generate multiple receipts
-    num_receipts = 3
-    for i in range(num_receipts):
-        receipt_data = generate_receipt_data()
-        filename = f"receipt_{receipt_data['bill_no']}_{receipt_data['date'].replace('/', '-')}.png"
-        render_receipt_to_image(receipt_data, out_path=filename)
+    # Test: generate a receipt locally
+    receipt_data = generate_receipt_data()
+    filename = f"receipt_{receipt_data['bill_no']}.png"
+    render_receipt_to_image(receipt_data, out_path=filename)
+    print(f"Saved {filename}")

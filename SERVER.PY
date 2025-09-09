@@ -1,14 +1,16 @@
 from flask import Flask, send_file
-from main import generate_receipt_data, render_receipt_to_image
 import os
+import main  # import your receipt generator
 
 app = Flask(__name__)
 
 @app.route("/")
-def home():
-    data = generate_receipt_data()
-    path = render_receipt_to_image(data, out_path="receipt.png")
-    return send_file(path, mimetype="image/png")
+def generate_receipt():
+    data = main.generate_receipt_data()
+    filename = f"receipt_{data['bill_no']}.png"
+    path = main.render_receipt_to_image(data, out_path=filename)
+    return send_file(path, mimetype="image/png", as_attachment=True, download_name=filename)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)
