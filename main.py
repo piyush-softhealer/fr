@@ -1,6 +1,4 @@
-#!/usr/bin/env python3
-# Ultra-Realistic Camera-Style Receipt Generator
-
+# main.py - Receipt Generation Functions
 import random
 import datetime
 import os
@@ -263,14 +261,14 @@ def create_receipt_base(data, width=400):
     
     return base_img
 
-def add_camera_effects(receipt_img):
-    """Add camera-like effects to make it look like a photo"""
-    # Convert to RGB if needed
-    if receipt_img.mode != 'RGB':
-        receipt_img = receipt_img.convert('RGB')
+def render_receipt_to_image(data, out_path="receipt.jpg"):
+    """Create a realistic receipt image"""
+    # Create the base receipt
+    receipt_base = create_receipt_base(data)
     
-    # 1. Add paper texture
-    texture = Image.new("RGB", receipt_img.size, (255, 255, 255))
+    # Add some simple effects (no complex transformations that might fail)
+    # Add paper texture
+    texture = Image.new("RGB", receipt_base.size, (255, 255, 255))
     pixels = texture.load()
     for i in range(texture.size[0]):
         for j in range(texture.size[1]):
@@ -278,103 +276,18 @@ def add_camera_effects(receipt_img):
                 val = random.randint(240, 255)
                 pixels[i, j] = (val, val, val)
     
-    receipt_img = Image.blend(receipt_img, texture, 0.05)
+    receipt_img = Image.blend(receipt_base, texture, 0.05)
     
-    # 2. Add perspective distortion (tilt the receipt)
-    width, height = receipt_img.size
-    tilt_factor = random.uniform(-0.03, 0.03)
-    
-    # Create a new image for the transformed receipt
-    transformed = Image.new("RGB", (int(width * 1.1), int(height * 1.1)), (240, 240, 235))
-    
-    # Apply perspective transformation
-    for y in range(height):
-        # Calculate the shift for this row (more shift at the bottom)
-        shift = int(tilt_factor * (height - y))
-        
-        # Extract the row from the original image
-        row = receipt_img.crop((0, y, width, y+1))
-        
-        # Paste the row with the calculated shift
-        transformed.paste(row, (shift, y))
-    
-    receipt_img = transformed
-    
-    # 3. Add shadow effect
-    shadow_size = (receipt_img.width + 20, receipt_img.height + 20)
-    final_img = Image.new("RGB", shadow_size, (240, 240, 235))
-    
-    # Create shadow
-    shadow = Image.new("RGB", (receipt_img.width, receipt_img.height), (0, 0, 0))
-    shadow_mask = Image.new("L", (receipt_img.width, receipt_img.height), 0)
-    shadow_draw = ImageDraw.Draw(shadow_mask)
-    
-    # Draw a gradient shadow
-    for i in range(10):
-        alpha = 30 - i * 3
-        shadow_draw.rectangle([(i, i), (receipt_img.width-i, receipt_img.height-i)], 
-                            outline=alpha)
-    
-    shadow.putalpha(shadow_mask)
-    final_img.paste(shadow, (10, 10), shadow)
-    
-    # Paste the receipt on top of the shadow
-    final_img.paste(receipt_img, (5, 5))
-    
-    # 4. Add lighting effects (vignette and glare)
-    vignette = Image.new("L", final_img.size, 255)
-    vignette_draw = ImageDraw.Draw(vignette)
-    
-    # Draw vignette (darker corners)
-    width, height = final_img.size
-    for x in range(width):
-        for y in range(height):
-            # Calculate distance from center (0-1)
-            dx = abs(x - width/2) / (width/2)
-            dy = abs(y - height/2) / (height/2)
-            distance = math.sqrt(dx*dx + dy*dy)
-            
-            # Apply vignette effect
-            vignette_value = int(255 * (1 - distance * 0.3))
-            vignette.putpixel((x, y), vignette_value)
-    
-    # Apply vignette
-    final_img = Image.composite(final_img, Image.new("RGB", final_img.size, (0, 0, 0)), vignette)
-    
-    # Add random glare spot
-    glare = Image.new("L", final_img.size, 0)
-    glare_draw = ImageDraw.Draw(glare)
-    
-    glare_x = random.randint(width//4, width*3//4)
-    glare_y = random.randint(height//4, height*3//4)
-    glare_radius = random.randint(30, 70)
-    
-    for x in range(glare_x - glare_radius, glare_x + glare_radius):
-        for y in range(glare_y - glare_radius, glare_y + glare_radius):
-            dist = math.sqrt((x - glare_x)**2 + (y - glare_y)**2)
-            if dist < glare_radius:
-                intensity = int(200 * (1 - dist/glare_radius))
-                if 0 <= x < width and 0 <= y < height:
-                    current = glare.getpixel((x, y))
-                    glare.putpixel((x, y), max(current, intensity))
-    
-    # Apply glare with screen blend mode
-    glare_rgb = Image.merge("RGB", (glare, glare, glare))
-    final_img = Image.blend(final_img, glare_rgb, 0.1)
-    
-    # 5. Add slight blur and color adjustment
-    final_img = final_img.filter(ImageFilter.GaussianBlur(radius=0.7))
-    
-    # Adjust color temperature (slightly warmer)
-    r, g, b = final_img.split()
+    # Add slight color temperature change
+    r, g, b = receipt_img.split()
     r = ImageEnhance.Brightness(r).enhance(1.03)
     g = ImageEnhance.Brightness(g).enhance(1.01)
-    final_img = Image.merge("RGB", (r, g, b))
+    receipt_img = Image.merge("RGB", (r, g, b))
     
-    # 6. Add slight noise
-    pixels = final_img.load()
-    for i in range(final_img.size[0]):
-        for j in range(final_img.size[1]):
+    # Add slight noise
+    pixels = receipt_img.load()
+    for i in range(receipt_img.size[0]):
+        for j in range(receipt_img.size[1]):
             if random.random() < 0.01:  # 1% chance of noise
                 noise = random.randint(-15, 15)
                 r, g, b = pixels[i, j]
@@ -383,26 +296,6 @@ def add_camera_effects(receipt_img):
                 b = max(0, min(255, b + noise))
                 pixels[i, j] = (r, g, b)
     
-    return final_img
-
-def generate_ultra_realistic_receipt(out_path="receipt.jpg"):
-    """Generate a complete realistic receipt that looks like a photo"""
-    # Generate receipt data
-    data = generate_receipt_data()
-    
-    # Create the base receipt
-    receipt_base = create_receipt_base(data)
-    
-    # Add camera effects
-    final_receipt = add_camera_effects(receipt_base)
-    
     # Save as high quality JPEG
-    final_receipt.save(out_path, "JPEG", quality=95)
-    return out_path, data
-
-if __name__ == "__main__":
-    # Generate multiple receipts
-    num_receipts = 3
-    for i in range(num_receipts):
-        filename, data = generate_ultra_realistic_receipt(f"camera_receipt_{i+1}.jpg")
-        print(f"Generated {filename} (Bill No: {data['bill_no']})")
+    receipt_img.save(out_path, "JPEG", quality=95)
+    return out_path
