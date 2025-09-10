@@ -9,7 +9,8 @@ app = Flask(__name__)
 def generate_receipt():
     data = main.generate_receipt_data()
     filename = f"receipt_{data['bill_no']}.jpg"
-    path = main.render_receipt_to_image(data, out_path=filename)
+    path, data = main.generate_ultra_realistic_receipt(out_path=filename)
+
     
     # HTML template to display the receipt
     html_template = """
@@ -50,9 +51,10 @@ def receipt_image():
     # Generate a new receipt for the image endpoint
     data = main.generate_receipt_data()
     filename = f"temp_receipt.jpg"
-    path = main.render_receipt_to_image(data, out_path=filename)
+    path, data = main.generate_ultra_realistic_receipt(out_path=filename)
+
     return send_file(filename, mimetype="image/jpeg")
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)      
+    app.run(host="0.0.0.0", port=port)   
